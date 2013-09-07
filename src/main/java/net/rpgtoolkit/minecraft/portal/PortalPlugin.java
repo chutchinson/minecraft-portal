@@ -134,6 +134,10 @@ public class PortalPlugin
         
         if (this.isPlayerAdjacent(player, block)) {
             
+            this.getLogger().log(Level.INFO, String.format(
+                    "Player %s initiated potential portal travel",
+                        player.getName()));
+            
             final PortalTraceResult result = this.trace(player, block);
                         
             // If the portal trace was successful (not invalid, empty,
@@ -383,12 +387,14 @@ public class PortalPlugin
     
     @Override
     public void onEnable() {
-        
-        Bukkit.getServer().getPluginManager().registerEvents(this, this);
-        
+                
         // TODO: Load configuration from file
         
         this.configuration =  new PortalPluginConfiguration();
+        
+        // Start listening for events
+        
+        Bukkit.getServer().getPluginManager().registerEvents(this, this);
         
     }
     
@@ -396,7 +402,6 @@ public class PortalPlugin
     public void onDisable() {
         
         PortalPlugin.interactions.clear();
-        
         
     }
     

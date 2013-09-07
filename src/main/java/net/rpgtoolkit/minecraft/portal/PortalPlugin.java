@@ -134,6 +134,7 @@ public class PortalPlugin
             
             if (!result.isAmbiguous()) {
                 
+                final Location origin = player.getLocation();
                 final Location destination = this.location(
                         result.getEndBlock(), result.getEndFaceDirection());
 
@@ -147,9 +148,9 @@ public class PortalPlugin
                 // Preserve the player's orientation and introduce the
                 // portal effects
                 
-                destination.setYaw(player.getLocation().getYaw());
+                destination.setYaw(origin.getYaw());
 
-                player.playSound(player.getLocation(), Sound.PORTAL_TRAVEL, 1f, 0f);
+                player.playSound(origin, Sound.PORTAL_TRAVEL, 1f, 0f);
                 player.addPotionEffect(new PotionEffect(
                         PotionEffectType.CONFUSION, 150, 0));
                 
@@ -161,7 +162,7 @@ public class PortalPlugin
                 
                 this.getLogger().log(Level.INFO, String.format(
                         "Player %s is teleporting from %s to %s",
-                            player.getName(), player.getLocation(), destination));
+                            player.getName(), origin, destination));
 
                 // Schedule the teleportation and only teleport the player if they
                 // are still near the start block and the block is still a
@@ -171,8 +172,7 @@ public class PortalPlugin
                     public void run() {
                         if (isPlayerAdjacent(player, block) && 
                                 block.getTypeId() == configuration.getPortalCapMaterial().getId()) {
-                            world.playEffect(player.getLocation(),
-                                    Effect.ENDER_SIGNAL, 0);
+                            world.playEffect(origin,Effect.ENDER_SIGNAL, 0);
                             player.teleport(destination);
                             world.playSound(destination, Sound.PORTAL, 1f, 0f);
                             world.playEffect(destination, Effect.ENDER_SIGNAL, 0);
@@ -199,12 +199,14 @@ public class PortalPlugin
     
     public boolean isPlayerAdjacent(Player player, Block block) {
         
-        Location pl = player.getLocation();
-        Location bl = block.getLocation();
+        Location playerLocation = player.getLocation();
+        Location blockLocation = block.getLocation();
         
-        double distance = pl.distance(bl);
+        double distance =  playerLocation.distance(blockLocation);
+        double distanceMaximum =
+                this.configuration.getPortalMaximumPlayerDistanceFromOrigin();
         
-        return (distance >= 0 && distance <= 3);
+        return (distance >= 0 && distance <= distanceMaximum);
         
     }
     

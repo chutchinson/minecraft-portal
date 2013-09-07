@@ -16,12 +16,14 @@ public class PortalPluginConfiguration {
     private Material portalWireMaterial;
     private int portalMaximumDistance;
     private int portalMinimumInteractionTime;
+    private int portalMaximumPlayerDistanceFromOrigin;
     
     public PortalPluginConfiguration() {
         this.portalCapMaterial = Material.NOTE_BLOCK;
         this.portalWireMaterial = Material.WOOL;
         this.portalMaximumDistance = 512;   // 32 chunks
         this.portalMinimumInteractionTime = 6000;   // 6 seconds
+        this.portalMaximumPlayerDistanceFromOrigin = 3; // 3 blocks
     }
     
     public Material getPortalCapMaterial() {
@@ -40,5 +42,8 @@ public class PortalPluginConfiguration {
         return this.portalMinimumInteractionTime;
     }
     
+    public int getPortalMaximumPlayerDistanceFromOrigin() {
+        return this.portalMaximumPlayerDistanceFromOrigin;
+    }
     
 }

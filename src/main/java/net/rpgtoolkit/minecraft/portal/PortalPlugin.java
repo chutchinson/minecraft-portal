@@ -21,6 +21,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -52,11 +53,13 @@ public class PortalPlugin
         private Block start;
         private Block end;
         private BlockFace face;
+        private long time;
         
-        public PortalTraceResult(Block start, Block end, BlockFace dir) {
+        public PortalTraceResult(Block start, Block end, BlockFace dir, long startTime) {
             this.start = start;
             this.end = end;
             this.face = dir;
+            this.time = (System.currentTimeMillis() - startTime);
             if (this.start != null && this.end != null) {
                 this.distance = this.end.getLocation().distance(
                         this.start.getLocation());
@@ -86,10 +89,14 @@ public class PortalPlugin
             return this.face;
         }
         
+        public long getTraceTime() {
+            return this.time;
+        }
+        
     }
 
     
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerInteract(final PlayerInteractEvent event) {
         
         final Player player = event.getPlayer();
@@ -110,7 +117,7 @@ public class PortalPlugin
         
         final World world = player.getWorld();
         final UUID id = player.getUniqueId();
-        
+                
         // Limit the rate at which players can initiate a 
         // travel in the world
         
@@ -128,11 +135,15 @@ public class PortalPlugin
         if (this.isPlayerAdjacent(player, block)) {
             
             final PortalTraceResult result = this.trace(player, block);
-            
+                        
             // If the portal trace was successful (not invalid, empty,
             // amibiguous) then initiate a teleport
             
             if (!result.isAmbiguous()) {
+                
+                this.getLogger().log(Level.INFO, String.format(
+                        "Completed portal trace of %s block(s) in %s ms",
+                            result.getDistance(), result.getTraceTime()));
                 
                 final Location origin = player.getLocation();
                 final Location destination = this.location(
@@ -152,7 +163,7 @@ public class PortalPlugin
 
                 player.playSound(origin, Sound.PORTAL_TRAVEL, 1f, 0f);
                 player.addPotionEffect(new PotionEffect(
-                        PotionEffectType.CONFUSION, 150, 0));
+                        PotionEffectType.CONFUSION, 150, 0), true);
                 
                 // Measure last interaction time for this player
                 
@@ -170,16 +181,25 @@ public class PortalPlugin
                 
                 Bukkit.getScheduler().runTaskLater(this, new Runnable() {
                     public void run() {
+                        
                         if (isPlayerAdjacent(player, block) && 
                                 block.getTypeId() == configuration.getPortalCapMaterial().getId()) {
+                            
                             world.playEffect(origin,Effect.ENDER_SIGNAL, 0);
+                            
                             player.teleport(destination);
+                            
                             world.playSound(destination, Sound.PORTAL, 1f, 0f);
                             world.playEffect(destination, Effect.ENDER_SIGNAL, 0);
+                            
+                            interactions.remove(id);
+                            
                         }
+                        
                     }
                 }, 75);
 
+                
             }
         }
         
@@ -276,6 +296,8 @@ public class PortalPlugin
         Material wire = this.configuration.getPortalWireMaterial();
         Material cap = this.configuration.getPortalCapMaterial();
         
+        long traceStartTime = System.currentTimeMillis();
+        
         // for each face on the current block
         //      if the face is not the opposite of the last face
         //          get the neighbor block for the face
@@ -333,7 +355,7 @@ public class PortalPlugin
             // ambiguity in the path (circuit or branch)
 
             if (relatives > 1) {
-                return new PortalTraceResult(start, null, null);
+                return new PortalTraceResult(start, null, null, traceStartTime);
             }
             
             // Update the last checked face and the current
@@ -346,11 +368,16 @@ public class PortalPlugin
             
         }
         
-        if (end == null || end.getTypeId() != cap.getId()) {
-            return new PortalTraceResult(start, null, null);
+        // If a portal end component is found then ensure it is the
+        // right type, otherwise clear the data to end up with a
+        // failed trace
+        
+        if (end != null && end.getTypeId() != cap.getId()) {
+            end = null;
+            last = null;
         }
         
-        return new PortalTraceResult(start, end, last);
+        return new PortalTraceResult(start, end, last, traceStartTime);
 
     }
     

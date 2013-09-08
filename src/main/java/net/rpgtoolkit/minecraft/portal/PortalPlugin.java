@@ -172,13 +172,7 @@ public class PortalPlugin
                 // Measure last interaction time for this player
                 
                 interactions.put(id, System.currentTimeMillis());
-                
-                // Log the teleportation
-                
-                this.getLogger().log(Level.INFO, String.format(
-                        "Player %s is teleporting from %s to %s",
-                            player.getName(), origin, destination));
-
+               
                 // Schedule the teleportation and only teleport the player if they
                 // are still near the start block and the block is still a
                 // portal cap block (e.g. it is not destroyed)
@@ -188,6 +182,12 @@ public class PortalPlugin
                         
                         if (isPlayerAdjacent(player, block) && 
                                 block.getTypeId() == configuration.getPortalCapMaterial().getId()) {
+                            
+                            // Log the teleportation
+
+                            PortalPlugin.this.getLogger().log(Level.INFO, String.format(
+                                    "Player %s teleported through a portal from %s to %s",
+                                        player.getName(), origin, destination));
                             
                             world.playEffect(origin,Effect.ENDER_SIGNAL, 0);
                             
@@ -345,7 +345,7 @@ public class PortalPlugin
                         }
                     }
                     else if (relative.getTypeId() == cap.getId()) {
-                        if (type > 0 && count > 0) {
+                        if (type >= 0 && count > 0) {
                             end = relative;
                             cached = face.getOppositeFace();
                             moved = false;

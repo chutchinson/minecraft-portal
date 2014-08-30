@@ -1,7 +1,3 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
 package net.rpgtoolkit.minecraft.portal;
 
 import java.util.Map;
@@ -31,7 +27,7 @@ import org.bukkit.potion.PotionEffectType;
 
 /**
  *
- * @author Chris
+ * @author Chris Hutchinson
  */
 public class PortalPlugin
     extends JavaPlugin implements Listener {
@@ -99,13 +95,16 @@ public class PortalPlugin
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerInteract(final PlayerInteractEvent event) {
         
+    	// If player interacted with a portal cap then begin
+    	// teleportation...
+    	
         final Player player = event.getPlayer();
         final Material cap = this.configuration.getPortalCapMaterial();      
         
         if (player.getGameMode() != GameMode.CREATIVE) {
             if (event.getAction() == Action.LEFT_CLICK_BLOCK) {
                 Block block = event.getClickedBlock();
-                if (block.getTypeId() == cap.getId()) {
+                if (block.getType() == cap) {
                     this.teleport(player, block);
                 }
             }
@@ -130,7 +129,7 @@ public class PortalPlugin
         
         // If the player is directly adjacent to the block in any direction
         // then trace the portal path and send them on a journey if there
-        // are no amiguities in the path
+        // are no ambiguities in the path
         
         if (this.isPlayerAdjacent(player, block)) {
             
@@ -141,7 +140,7 @@ public class PortalPlugin
             final PortalTraceResult result = this.trace(player, block);
                         
             // If the portal trace was successful (not invalid, empty,
-            // amibiguous) then initiate a teleport
+            // ambiguous) then initiate a teleport
             
             if (!result.isAmbiguous()) {
                 
@@ -181,7 +180,7 @@ public class PortalPlugin
                     public void run() {
                         
                         if (isPlayerAdjacent(player, block) && 
-                                block.getTypeId() == configuration.getPortalCapMaterial().getId()) {
+                                block.getType() == configuration.getPortalCapMaterial()) {
                             
                             // Log the teleportation
 
@@ -256,17 +255,30 @@ public class PortalPlugin
     public Location location(Block block, BlockFace face) {
                 
         Location destination = block.getLocation().add(0.5, 0, 0.5);
-        
-        switch (face.getOppositeFace()) {
+        BlockFace opposingFace = face.getOppositeFace();
+                
+        switch (opposingFace) {
+        	case NORTH_EAST:
+        	case NORTH_WEST:
+        	case NORTH_NORTH_EAST:
+        	case NORTH_NORTH_WEST:
             case NORTH:
                 destination = destination.add(0, 0, -1);
                 break;
+            case EAST_NORTH_EAST:
+            case EAST_SOUTH_EAST:
             case EAST:
                 destination = destination.add(1, 0, 0);
                 break;
+            case SOUTH_EAST:
+            case SOUTH_WEST:
+            case SOUTH_SOUTH_EAST:
+            case SOUTH_SOUTH_WEST:
             case SOUTH:
                 destination = destination.add(0, 0, 1);
                 break;
+            case WEST_NORTH_WEST:
+            case WEST_SOUTH_WEST:
             case WEST:
                 destination = destination.add(-1, 0, 0);
                 break;
@@ -276,6 +288,9 @@ public class PortalPlugin
             case DOWN:
                 destination = destination.add(0, -2, 0);
                 break;
+            default:
+            	destination = destination.add(0, 0, 0);
+            	break;
         }
         
         return destination;
@@ -327,11 +342,11 @@ public class PortalPlugin
             // Check each neighbor block (except the face
             // connected to the previous block in the trace)
             // for a portal wire:
-            
+                        
             for (BlockFace face : directions) {
                 if (face != last && current != null) {
                     Block relative = current.getRelative(face, 1);
-                    if (relative.getTypeId() == wire.getId()) {
+                    if (relative.getType() == wire) {
                         if (type < 0) {
                             type = relative.getData();
                         }
@@ -344,7 +359,7 @@ public class PortalPlugin
                             relatives++;
                         }
                     }
-                    else if (relative.getTypeId() == cap.getId()) {
+                    else if (relative.getType() == cap) {
                         if (type >= 0 && count > 0) {
                             end = relative;
                             cached = face.getOppositeFace();
@@ -376,7 +391,7 @@ public class PortalPlugin
         // right type, otherwise clear the data to end up with a
         // failed trace
         
-        if (end != null && end.getTypeId() != cap.getId()) {
+        if (end != null && end.getType() != cap) {
             end = null;
             last = null;
         }
